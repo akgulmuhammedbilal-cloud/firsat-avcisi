@@ -21,7 +21,9 @@ sources:
     enabled: true
     feeds:
       - "https://www.mydealz.de/rss/gruppe/laptop"
-      # Kendi kişisel MyDealz keyword alarm RSS URL'ini de ekleyebilirsin (en yüksek isabet).
+      # Kişisel keyword alarm RSS'leri (hesap → "Schlagwort-Alarme"): aynı kaynak
+      # altında ekle ki grup feed'iyle mükerrerler otomatik tekilleşsin.
+      # - "https://www.mydealz.de/rss/schlagwort-alarm/XXXXXXXX"
     request_timeout_seconds: 20
 
   preisjaeger:                 # MyDealz'in Avusturya kardeş sitesi (ek kapsam, EUR)
