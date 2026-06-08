@@ -76,14 +76,17 @@ def extract_price(text: str) -> float | None:
     return None
 
 
-def parse_prices(text: str) -> tuple[float | None, float | None, float | None]:
+def parse_prices(text: str, current: float | None = None
+                 ) -> tuple[float | None, float | None, float | None]:
     """(güncel_fiyat, referans_fiyat, indirim_yüzdesi) ayrıştırır.
 
     Referans fiyat ve indirim, ilan metnindeki satıcı beyanlarından (statt/UVP/-%)
     gelir; bulunamazsa None. İndirim yüzdesi açıkça yazılmışsa o, yoksa referans ve
-    güncel fiyattan hesaplanır.
+    güncel fiyattan hesaplanır. `current` verilirse (ör. ayrı bir fiyat alanından),
+    metinden çıkarmak yerine o kullanılır.
     """
-    current = extract_price(text)
+    if current is None:
+        current = extract_price(text)
 
     reference = None
     ref_match = _REF_RE.search(text or "")

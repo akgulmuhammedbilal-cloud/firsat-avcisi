@@ -110,6 +110,35 @@ def test_bad_deal_rejected():
     assert not result.approved
 
 
+# --- Apify kaynağı (mock) ----------------------------------------------------
+def test_apify_source_maps_items():
+    from unittest.mock import patch, Mock
+    from sources.apify_source import ApifySource
+
+    fake_items = [
+        {"title": "Lenovo Legion Pro 7 RTX 4080", "url": "http://x/1", "price": 1899},
+        {"title": "MSI Stealth 16 statt 2.499 €", "url": "http://x/2", "price": "1.999 €"},
+        {"title": "", "url": "http://x/3", "price": 1000},  # başlıksız → atlanır
+    ]
+    resp = Mock(status_code=200)
+    resp.raise_for_status = lambda: None
+    resp.json = lambda: fake_items
+    with patch("sources.apify_source.requests.get", return_value=resp):
+        src = ApifySource("geizhals", token="t", apify_resource="acts/u~web-scraper")
+        deals = src.fetch()
+    assert len(deals) == 2
+    assert deals[0].price == 1899.0
+    assert deals[1].price == 1999.0 and deals[1].reference_price == 2499.0
+
+
+def test_apify_source_handles_error():
+    from unittest.mock import patch
+    from sources.apify_source import ApifySource
+    with patch("sources.apify_source.requests.get", side_effect=Exception("boom")):
+        src = ApifySource("geizhals", token="t", apify_resource="acts/u~web-scraper")
+        assert src.fetch() == []  # hata → boş liste, sistem durmaz
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):

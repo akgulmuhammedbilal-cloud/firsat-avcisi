@@ -34,7 +34,7 @@ Telegram'a düşer.
 ## Proje Yapısı
 
 ```
-sources/        base.py (DealSource arayüzü) · rss_source.py (genel RSS okuyucu) · mydealz.py (uyumluluk)
+sources/        base.py (DealSource) · rss_source.py (genel RSS) · apify_source.py (mağaza-direkt) · mydealz.py (uyumluluk)
 analyzers/      pre_filter.py · base_analyzer.py · gemini_analyzer.py (+DryRun) · scoring.py · spec_validator.py
 notifications/  telegram_notifier.py
 storage/        models.py · database.py (SQLite)
@@ -117,6 +117,16 @@ mükerrer bildirim olmaz.
 - Sırlar yalnızca GitHub Actions secrets'ta tutulur; `.env` asla commit edilmez.
 - Private repo'da ücretsiz 2000 dk/ay limiti aşılabilir → ya public yap ya cron aralığını büyüt (`*/40`).
 - GitHub zamanlamayı yoğunlukta birkaç dakika geciktirebilir (deal avı için sorun değil).
+
+## Mağaza-direkt kaynaklar (Apify)
+
+GitHub Actions'tan 403/JS ile erişilemeyen siteler (Geizhals, idealo, Dell Outlet) **Apify**
+(proxy + headless tarayıcı) ile kazınır. Maliyeti düşük tutmak için actor Apify'da **zamanlı**
+çalışır; bu sistem yalnızca son başarılı run'ın **dataset'ini API ile okur** (`type: apify`).
+
+Kurulum: Apify hesabı + `APIFY_TOKEN` secret → actor'ü kur ve zamanla → `config.yaml`'da ilgili
+kaynağın `apify_resource`'unu (task/actor ID) doldur, `enabled: true` yap, `fields` ile actor
+çıktısını (title/url/price) eşle. Çıktı normal pipeline'a girer (ön filtre + AI + skor).
 
 ## Kişiselleştirme & UX
 

@@ -29,6 +29,7 @@ from analyzers.base_analyzer import LLMAnalyzer
 from analyzers.gemini_analyzer import DryRunAnalyzer, GeminiAnalyzer
 from analyzers.pre_filter import pre_filter
 from notifications.telegram_notifier import TelegramNotifier
+from sources.apify_source import ApifySource
 from sources.base import DealSource
 from sources.rss_source import RssSource
 from storage.database import Database
@@ -58,6 +59,21 @@ def build_sources(config: dict) -> list[DealSource]:
                     name=name,
                     feeds=cfg.get("feeds", []),
                     request_timeout_seconds=cfg.get("request_timeout_seconds", 20),
+                )
+            )
+        elif src_type == "apify":
+            token = os.getenv("APIFY_TOKEN")
+            if not token:
+                logger.warning("APIFY_TOKEN yok (kaynak: %s) — atlandı.", name)
+                continue
+            sources.append(
+                ApifySource(
+                    name=name,
+                    token=token,
+                    apify_resource=cfg.get("apify_resource", ""),
+                    fields=cfg.get("fields", {}),
+                    limit=cfg.get("limit", 200),
+                    request_timeout_seconds=cfg.get("request_timeout_seconds", 60),
                 )
             )
         else:

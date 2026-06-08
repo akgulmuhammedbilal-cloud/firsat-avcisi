@@ -38,6 +38,21 @@ sources:
       - "https://www.preisjaeger.at/rss/gruppe/laptop"
     request_timeout_seconds: 20
 
+  # Geizhals (Apify ile): proxy+tarayıcı gerektirir. Apify'da actor'ü kurup
+  # ZAMANLI çalıştır; biz son başarılı run'ın dataset'ini okuruz (ucuz).
+  # Hazır olunca enabled: true yap, apify_resource'u kendi task/actor ID'inle doldur
+  # ve APIFY_TOKEN secret'ını ekle. Alan adları Apify çıktına göre fields'ta eşlenir.
+  geizhals:
+    enabled: false
+    type: apify
+    apify_resource: "actor-tasks/SENIN_TASK_ID"   # veya "acts/KULLANICI~web-scraper"
+    fields:
+      title: "title"
+      url: "url"
+      price: "price"
+    limit: 200
+    request_timeout_seconds: 60
+
 filters:
   min_gpu: "RTX 4060"
   min_ram_gb: 32
