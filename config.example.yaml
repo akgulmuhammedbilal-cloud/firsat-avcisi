@@ -14,13 +14,20 @@ storage:
   database_path: deals.db
 
 sources:
+  # Her blok bir kaynaktır: {enabled, type(varsayılan rss), feeds, request_timeout_seconds}.
+  # Yeni RSS kaynağı eklemek için yeni blok eklemen yeterli — kod gerekmez.
+  # MyDealz/Preisjäger format: https://<site>/rss/gruppe/<grup-slug>
   mydealz:
     enabled: true
-    # Hesap GEREKTİRMEYEN herkese açık kategori RSS feed'leri. Kurulum yok.
-    # Format: https://www.mydealz.de/rss/gruppe/<grup-slug>
-    # İstersen kendi kişisel deal-alarm RSS URL'ini de buraya ekleyebilirsin.
     feeds:
       - "https://www.mydealz.de/rss/gruppe/laptop"
+      # Kendi kişisel MyDealz keyword alarm RSS URL'ini de ekleyebilirsin (en yüksek isabet).
+    request_timeout_seconds: 20
+
+  preisjaeger:                 # MyDealz'in Avusturya kardeş sitesi (ek kapsam, EUR)
+    enabled: true
+    feeds:
+      - "https://www.preisjaeger.at/rss/gruppe/laptop"
     request_timeout_seconds: 20
 
 filters:

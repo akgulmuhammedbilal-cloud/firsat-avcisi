@@ -34,7 +34,7 @@ Telegram'a düşer.
 ## Proje Yapısı
 
 ```
-sources/        base.py (DealSource arayüzü) · mydealz.py (RSS okuyucu)
+sources/        base.py (DealSource arayüzü) · rss_source.py (genel RSS okuyucu) · mydealz.py (uyumluluk)
 analyzers/      pre_filter.py · base_analyzer.py · gemini_analyzer.py (+DryRun) · scoring.py · spec_validator.py
 notifications/  telegram_notifier.py
 storage/        models.py · database.py (SQLite)
@@ -44,7 +44,9 @@ tests/          birim testleri + offline örnek feed/config
 ```
 
 Mimari çoklu kaynak için genişletilebilir: yeni bir kaynak `DealSource` arayüzünü, yeni bir AI
-sağlayıcı `LLMAnalyzer` arayüzünü uygular (ileride idealo/geizhals, Claude vb.).
+sağlayıcı `LLMAnalyzer` arayüzünü uygular. **Yeni bir RSS kaynağı eklemek için kod gerekmez** —
+`config.yaml`'daki `sources` altına `{enabled, feeds}` bloğu eklemen yeterli. Varsayılan olarak
+MyDealz (`/rss/gruppe/laptop`) ve Preisjäger (AT kardeş site) etkin.
 
 ---
 

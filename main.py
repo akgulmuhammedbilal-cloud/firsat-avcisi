@@ -29,7 +29,7 @@ from analyzers.gemini_analyzer import DryRunAnalyzer, GeminiAnalyzer
 from analyzers.pre_filter import pre_filter
 from notifications.telegram_notifier import TelegramNotifier
 from sources.base import DealSource
-from sources.mydealz import MyDealzSource
+from sources.rss_source import RssSource
 from storage.database import Database
 
 logger = logging.getLogger("firsat_avcisi")
@@ -41,16 +41,27 @@ def load_config(path: str = "config.yaml") -> dict:
 
 
 def build_sources(config: dict) -> list[DealSource]:
+    """config.sources altındaki her etkin kaynağı kurar.
+
+    Her kaynak adı bir blok: {enabled, type, feeds, ...}. type varsayılan "rss".
+    Yeni bir RSS kaynağı eklemek için sadece config'e blok eklemek yeterlidir.
+    """
     sources: list[DealSource] = []
-    src_cfg = config.get("sources", {})
-    mydealz = src_cfg.get("mydealz", {})
-    if mydealz.get("enabled"):
-        sources.append(
-            MyDealzSource(
-                feeds=mydealz.get("feeds", []),
-                request_timeout_seconds=mydealz.get("request_timeout_seconds", 20),
+    for name, cfg in config.get("sources", {}).items():
+        if not cfg.get("enabled"):
+            continue
+        src_type = cfg.get("type", "rss")
+        if src_type == "rss":
+            sources.append(
+                RssSource(
+                    name=name,
+                    feeds=cfg.get("feeds", []),
+                    request_timeout_seconds=cfg.get("request_timeout_seconds", 20),
+                )
             )
-        )
+        else:
+            logger.warning("Bilinmeyen kaynak tipi '%s' (kaynak: %s) — atlandı.",
+                           src_type, name)
     return sources
 
 
