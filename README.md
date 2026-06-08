@@ -118,6 +118,20 @@ mükerrer bildirim olmaz.
 - Private repo'da ücretsiz 2000 dk/ay limiti aşılabilir → ya public yap ya cron aralığını büyüt (`*/40`).
 - GitHub zamanlamayı yoğunlukta birkaç dakika geciktirebilir (deal avı için sorun değil).
 
+## Kişiselleştirme & UX
+
+**Geri bildirim butonları:** Her bildirimde 4 buton var — 👍 İyi · 👎 Gereksiz · 💰 Pahalı ·
+📦 Aldım. Bastığın geri bildirim `feedback` tablosuna kaydedilir (ileride tercih öğrenmesi için).
+GitHub Actions sürekli dinleyemediğinden basışlar her tarama koşusunda `getUpdates` ile toplanır —
+yani buton basışı **en geç ~20 dk içinde** işlenir, anında değil.
+
+**Günlük özet:** `.github/workflows/digest.yml` her gün (varsayılan 18:00 UTC) son 24 saatin
+özetini Telegram'a gönderir (görülen/onaylanan/bildirilen sayıları + en iyi 5 fırsat).
+Elle de: `python main.py --digest`.
+
+**Whitelist / blacklist & bütçe:** `config.yaml` üzerinden — `preferred_models` (pozitif puan),
+`reject_keywords` (otomatik ret), `min_price`/`max_price` (bütçe), `min_deal_score` (katılık).
+
 ## Fırsat Skoru (0-100)
 
 | Bileşen | Puan |

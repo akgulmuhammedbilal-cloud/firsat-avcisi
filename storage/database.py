@@ -26,6 +26,21 @@ CREATE TABLE IF NOT EXISTS deals (
 );
 CREATE INDEX IF NOT EXISTS idx_deals_source ON deals(source);
 CREATE INDEX IF NOT EXISTS idx_deals_score  ON deals(deal_score);
+
+-- Telegram buton geri bildirimleri (Alındı/Gereksiz/Pahalı/İyi)
+CREATE TABLE IF NOT EXISTS feedback (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    deal_id    TEXT NOT NULL,
+    feedback   TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_feedback_deal ON feedback(deal_id);
+
+-- Genel anahtar/değer (ör. telegram getUpdates offset)
+CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+);
 """
 
 
@@ -103,3 +118,40 @@ class Database:
             "UPDATE deals SET notified_at = ? WHERE deal_id = ?", (_now(), deal_id)
         )
         self.conn.commit()
+
+    # --- meta (anahtar/değer) --------------------------------------------
+    def get_meta(self, key: str, default: str | None = None) -> str | None:
+        cur = self.conn.execute("SELECT value FROM meta WHERE key = ?", (key,))
+        row = cur.fetchone()
+        return row["value"] if row else default
+
+    def set_meta(self, key: str, value: str) -> None:
+        self.conn.execute(
+            "INSERT INTO meta (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (key, value),
+        )
+        self.conn.commit()
+
+    # --- geri bildirim ---------------------------------------------------
+    def record_feedback(self, deal_id: str, feedback: str) -> None:
+        self.conn.execute(
+            "INSERT INTO feedback (deal_id, feedback, created_at) VALUES (?, ?, ?)",
+            (deal_id, feedback, _now()),
+        )
+        self.conn.commit()
+
+    def deal_title(self, deal_id: str) -> str | None:
+        cur = self.conn.execute("SELECT title FROM deals WHERE deal_id = ?", (deal_id,))
+        row = cur.fetchone()
+        return row["title"] if row else None
+
+    # --- günlük özet ------------------------------------------------------
+    def deals_since(self, since_iso: str) -> list[sqlite3.Row]:
+        """since_iso'dan beri ilk görülen ilanları skora göre döndürür."""
+        cur = self.conn.execute(
+            "SELECT title, url, price, deal_score, approved, notified_at "
+            "FROM deals WHERE first_seen_at >= ? ORDER BY deal_score DESC",
+            (since_iso,),
+        )
+        return cur.fetchall()

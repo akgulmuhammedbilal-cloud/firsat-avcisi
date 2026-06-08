@@ -19,6 +19,7 @@ import logging
 import os
 import sys
 import time
+from datetime import datetime, timezone
 
 import yaml
 from dotenv import load_dotenv
@@ -89,7 +90,12 @@ def run_once(config: dict, db: Database, sources: list[DealSource],
              analyzer: LLMAnalyzer, notifier: TelegramNotifier) -> None:
     filters = config.get("filters", {})
     preferred = config.get("preferred_models", [])
-    min_score = filters.get("min_deal_score", 75)
+    min_score = filters.get("min_deal_score", 70)
+
+    # Önce biriken Telegram buton geri bildirimlerini işle (getUpdates)
+    fb = notifier.poll_feedback(db)
+    if fb:
+        logger.info("%d geri bildirim işlendi.", fb)
 
     stats = {"fetched": 0, "prefiltered": 0, "analyzed": 0, "notified": 0}
 
@@ -143,9 +149,36 @@ def run_once(config: dict, db: Database, sources: list[DealSource],
     )
 
 
+def run_digest(config: dict, db: Database, notifier: TelegramNotifier) -> None:
+    """Belirlenen dönemdeki fırsatların Telegram'a kısa özetini gönderir."""
+    from datetime import timedelta
+
+    hours = config.get("digest", {}).get("period_hours", 24)
+    since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat(timespec="seconds")
+    rows = db.deals_since(since)
+    approved = [r for r in rows if r["approved"]]
+    notified = [r for r in rows if r["notified_at"]]
+
+    lines = [f"*📊 Günlük Özet* — son {hours} saat", ""]
+    lines.append(f"Görülen ilan: *{len(rows)}* · Onaylanan: *{len(approved)}* · "
+                 f"Bildirilen: *{len(notified)}*")
+    if approved:
+        lines += ["", "*En iyi fırsatlar:*"]
+        for r in approved[:5]:
+            price = f"{r['price']:.0f} €" if r["price"] is not None else "—"
+            title = (r["title"] or "")[:45]
+            lines.append(f"• {r['deal_score']}/100 · {price} · [{title}]({r['url']})")
+    else:
+        lines += ["", "Bu dönemde onaylanan fırsat yok."]
+    notifier.send_text("\n".join(lines))
+    logger.info("Günlük özet gönderildi (%d ilan).", len(rows))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="AI Premium Laptop Fırsat Avcısı")
     parser.add_argument("--once", action="store_true", help="Tek tarama yap ve çık")
+    parser.add_argument("--digest", action="store_true",
+                        help="Tarama yapma; sadece günlük özet gönder")
     parser.add_argument("--dry-run", action="store_true",
                         help="API anahtarı kullanmadan test (Gemini/Telegram mock)")
     parser.add_argument("--config", default="config.yaml")
@@ -169,13 +202,22 @@ def main() -> None:
     config = load_config(args.config)
 
     db = Database(config.get("storage", {}).get("database_path", "deals.db"))
-    sources = build_sources(config)
-    analyzer = build_analyzer(config, args.dry_run)
     notifier = TelegramNotifier(
         token=os.getenv("TELEGRAM_BOT_TOKEN"),
         chat_id=os.getenv("TELEGRAM_CHAT_ID"),
         dry_run=args.dry_run,
     )
+
+    # Özet modu: tarama/kaynak/analizör gerektirmez
+    if args.digest:
+        try:
+            run_digest(config, db, notifier)
+        finally:
+            db.close()
+        return
+
+    sources = build_sources(config)
+    analyzer = build_analyzer(config, args.dry_run)
 
     logger.info("Başlatıldı — %d kaynak, analizör=%s, telegram_dry_run=%s",
                 len(sources), type(analyzer).__name__, notifier.dry_run)

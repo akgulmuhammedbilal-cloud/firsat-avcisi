@@ -1,0 +1,30 @@
+name: Günlük Özet
+
+# Günde bir kez son 24 saatin fırsat özetini Telegram'a gönderir.
+on:
+  schedule:
+    - cron: "0 18 * * *"   # her gün 18:00 UTC (≈ 21:00 TR). GitHub geciktirebilir.
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firsat-avcisi-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Özet gönder
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py --digest --config config.yaml

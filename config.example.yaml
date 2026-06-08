@@ -13,6 +13,9 @@ ai:
 storage:
   database_path: deals.db
 
+digest:
+  period_hours: 24             # Günlük özetin kapsadığı saat aralığı
+
 sources:
   # Her blok bir kaynaktır: {enabled, type(varsayılan rss), feeds, request_timeout_seconds}.
   # Yeni RSS kaynağı eklemek için yeni blok eklemen yeterli — kod gerekmez.
