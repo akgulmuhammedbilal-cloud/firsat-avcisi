@@ -93,6 +93,29 @@ python tests/test_prefilter_scoring.py    # ya da: python -m pytest -q
 
 ---
 
+## Bulut Dağıtımı — PC kapalıyken de çalışır (GitHub Actions)
+
+Yerel `python main.py`, yalnızca PC açıkken çalışır. PC'den bağımsız 7/24 çalışması için
+`.github/workflows/firsat-avcisi.yml` her **20 dakikada** bir bulutta `python main.py --once`
+koşar; fırsat bulursa Telegram'a atar. `deals.db` her koşudan sonra depoya geri yazılır, böylece
+mükerrer bildirim olmaz.
+
+**Kurulum (tek seferlik):**
+1. GitHub'da yeni bir repo oluştur — **public** öner (Actions dakikaları sınırsız; kodda sır yok).
+2. Repo → **Settings → Secrets and variables → Actions** altına 3 secret ekle (değerler `.env`'deki gibi):
+   `GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
+3. Yerel depoyu push'la:
+   ```powershell
+   git remote add origin https://github.com/<KULLANICI>/<REPO>.git
+   git push -u origin main
+   ```
+4. Repo → **Actions** sekmesi → "Fırsat Avcısı" → **Run workflow** ile elle test et.
+
+**Notlar:**
+- Sırlar yalnızca GitHub Actions secrets'ta tutulur; `.env` asla commit edilmez.
+- Private repo'da ücretsiz 2000 dk/ay limiti aşılabilir → ya public yap ya cron aralığını büyüt (`*/40`).
+- GitHub zamanlamayı yoğunlukta birkaç dakika geciktirebilir (deal avı için sorun değil).
+
 ## Fırsat Skoru (0-100)
 
 | Bileşen | Puan |
