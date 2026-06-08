@@ -13,14 +13,23 @@ from storage.models import AnalysisResult, RawDeal
 
 
 def _discount_points(result: AnalysisResult, raw: RawDeal) -> int:
-    """Gerçek indirim oranına göre 0-25 puan."""
-    normal = result.estimated_normal_price
+    """İndirim oranına göre 0-25 puan.
+
+    Öncelik GERÇEK veridedir: ilan metninden ayrıştırılan indirim/referans fiyat.
+    Bu yoksa Gemini'nin tahmini normal fiyatına düşülür (daha düşük güven).
+    """
+    # 1) İlanda açıkça belirtilen indirim yüzdesi (en güvenilir)
+    if raw.discount_pct is not None and raw.discount_pct > 0:
+        return min(25, round(raw.discount_pct))
+    # 2) İlanda belirtilen referans fiyat
     price = raw.price
-    if not normal or not price or normal <= 0 or price <= 0 or price >= normal:
-        return 5  # indirim doğrulanamadı → düşük taban puan
-    discount = (normal - price) / normal
-    # %0 → 0p, %25+ → 25p (lineer, üst sınır)
-    return min(25, round(discount * 100))
+    if raw.reference_price and price and raw.reference_price > price:
+        return min(25, round((raw.reference_price - price) / raw.reference_price * 100))
+    # 3) Gemini tahmini (fallback)
+    normal = result.estimated_normal_price
+    if normal and price and normal > price:
+        return min(25, round((normal - price) / normal * 100))
+    return 5  # indirim doğrulanamadı → düşük taban puan
 
 
 def _gpu_points(result: AnalysisResult) -> int:

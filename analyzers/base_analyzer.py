@@ -80,10 +80,18 @@ KURALLAR:
 
 def build_user_prompt(deal: RawDeal) -> str:
     price = f"{deal.price:.0f} €" if deal.price is not None else "belirtilmemiş"
+    # İlandan ayrıştırılan GERÇEK referans fiyat/indirim varsa Gemini'ye bildir ki
+    # estimated_normal_price'ı uydurmasın, bu gerçek veriyi kullansın.
+    ref_lines = ""
+    if deal.reference_price:
+        ref_lines += f"İlanda belirtilen normal fiyat: {deal.reference_price:.0f} €\n"
+    if deal.discount_pct:
+        ref_lines += f"İlanda belirtilen indirim: %{deal.discount_pct:.0f}\n"
     return (
         "Aşağıdaki ilanı değerlendir ve JSON döndür.\n\n"
         f"Başlık: {deal.title}\n"
         f"Fiyat: {price}\n"
+        f"{ref_lines}"
         f"Kaynak: {deal.source}\n"
         f"Link: {deal.url}\n"
         f"Açıklama: {deal.description or '(yok)'}\n"

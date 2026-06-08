@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from analyzers.pre_filter import pre_filter
 from analyzers.scoring import score
 from analyzers.gemini_analyzer import DryRunAnalyzer
-from sources.mydealz import extract_price
+from sources.rss_source import extract_price, parse_prices
 from sources.base import make_deal_id
 from storage.models import RawDeal
 
@@ -60,6 +60,39 @@ def test_extract_price_german_format():
     assert extract_price("nur 1299€ statt mehr") == 1299.0
     assert extract_price("Preis EUR 999") == 999.0
     assert extract_price("kein preis hier") is None
+
+
+# --- gerçek indirim ayrıştırma (statt / UVP / -%) ----------------------------
+def test_parse_prices_statt():
+    cur, ref, pct = parse_prices("Legion Slim 7 für 1.399 € statt 1.799 €")
+    assert cur == 1399.0 and ref == 1799.0
+    assert pct == round((1799 - 1399) / 1799 * 100, 1)
+
+
+def test_parse_prices_uvp():
+    cur, ref, pct = parse_prices("ROG Zephyrus 2.099€ (UVP 2.799€)")
+    assert cur == 2099.0 and ref == 2799.0 and pct > 0
+
+
+def test_parse_prices_explicit_pct():
+    cur, ref, pct = parse_prices("Gaming Laptop 1499 € -22% Rabatt")
+    assert cur == 1499.0 and pct == 22.0
+
+
+def test_parse_prices_invalid_reference_dropped():
+    # Referans güncelden küçükse geçersiz sayılmalı
+    cur, ref, pct = parse_prices("Laptop 1500 € statt 999 €")
+    assert ref is None
+
+
+def test_real_discount_used_in_scoring():
+    from analyzers.gemini_analyzer import DryRunAnalyzer
+    deal = _deal("Lenovo Legion Slim 7 Gaming Laptop RTX 4070 32GB", price=1399)
+    deal.reference_price = 1799.0
+    deal.discount_pct = 22.0
+    result = DryRunAnalyzer(CONFIG["reject_keywords"], CONFIG["preferred_models"]).analyze(deal)
+    from analyzers.scoring import _discount_points
+    assert _discount_points(result, deal) == 22  # gerçek %22 kullanılmalı
 
 
 # --- skor + dry-run analizör -------------------------------------------------

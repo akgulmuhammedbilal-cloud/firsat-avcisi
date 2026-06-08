@@ -18,6 +18,10 @@ class RawDeal:
     currency: str = "EUR"
     merchant: Optional[str] = None
     raw_published_at: Optional[str] = None
+    # İlan metninden ayrıştırılan GERÇEK referans (normal) fiyat ve indirim oranı.
+    # "statt 1.799 €", "UVP", "−22%" gibi satıcı beyanlarından gelir; yoksa None.
+    reference_price: Optional[float] = None
+    discount_pct: Optional[float] = None
 
     def text_blob(self) -> str:
         """Ön filtre ve AI için birleşik metin (başlık + açıklama)."""

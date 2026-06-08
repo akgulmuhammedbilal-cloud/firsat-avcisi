@@ -32,24 +32,80 @@ _PRICE_RE = re.compile(
 )
 _TAG_RE = re.compile(r"<[^>]+>")
 
+# Referans (normal/eski) fiyat işaretleri: "statt 1.799 €", "UVP 1.999€", "ehem. ..."
+# ÖNEMLİ: Referans fiyatın € işaretiyle bitişik olması ZORUNLU. Aksi halde "RTX 5070"
+# gibi GPU model numaraları yanlışlıkla fiyat sanılıp sahte indirim üretir.
+_PRICE_TOKEN = r"([0-9][0-9.\s]*[0-9](?:,[0-9]{2})?)"
+_REF_KEYWORDS = (
+    r"statt|uvp|ehem\.?|ehemals|empf\.?\s*vk|\bvk\b|idealo|regul[äa]r|bisher|"
+    r"fr[üu]her|normalerweise|listenpreis"
+)
+_REF_RE = re.compile(
+    r"(?:" + _REF_KEYWORDS + r")[^0-9]{0,12}"
+    r"(?:€\s*" + _PRICE_TOKEN + r"|" + _PRICE_TOKEN + r"\s*(?:€|EUR))",
+    re.IGNORECASE,
+)
+# Açıkça belirtilen indirim oranı: "-22%", "22% Rabatt", "minus 30 %"
+_PCT_RE = re.compile(
+    r"(?:-\s*|minus\s*)([0-9]{1,2})\s*%"
+    r"|([0-9]{1,2})\s*%\s*(?:rabatt|reduziert|sparen|g[üu]nstiger|nachlass|off)",
+    re.IGNORECASE,
+)
+
+
+def _to_float(raw: str | None, lo: float = 50, hi: float = 20000) -> float | None:
+    """Almanca biçimli fiyat metnini float'a çevirir (binlik '.', ondalık ',')."""
+    if not raw:
+        return None
+    cleaned = raw.replace(" ", "").replace(".", "").replace(",", ".")
+    try:
+        value = float(cleaned)
+    except ValueError:
+        return None
+    return value if lo <= value <= hi else None
+
 
 def extract_price(text: str) -> float | None:
     """Metinden ilk makul fiyatı (EUR) çıkarır. Almanca biçimlendirme destekli."""
     if not text:
         return None
     for match in _PRICE_RE.finditer(text):
-        raw = match.group(1) or match.group(2)
-        if not raw:
-            continue
-        # Almanca format: binlik '.', ondalık ','. Boşlukları temizle.
-        cleaned = raw.replace(" ", "").replace(".", "").replace(",", ".")
-        try:
-            value = float(cleaned)
-        except ValueError:
-            continue
-        if 100 <= value <= 20000:  # mantıklı laptop fiyat aralığı
+        value = _to_float(match.group(1) or match.group(2), lo=100)
+        if value is not None:
             return value
     return None
+
+
+def parse_prices(text: str) -> tuple[float | None, float | None, float | None]:
+    """(güncel_fiyat, referans_fiyat, indirim_yüzdesi) ayrıştırır.
+
+    Referans fiyat ve indirim, ilan metnindeki satıcı beyanlarından (statt/UVP/-%)
+    gelir; bulunamazsa None. İndirim yüzdesi açıkça yazılmışsa o, yoksa referans ve
+    güncel fiyattan hesaplanır.
+    """
+    current = extract_price(text)
+
+    reference = None
+    ref_match = _REF_RE.search(text or "")
+    if ref_match:
+        reference = _to_float(ref_match.group(1) or ref_match.group(2))
+    # Referans güncel fiyattan büyük olmalı; değilse geçersiz say.
+    if reference is not None and current is not None and reference <= current:
+        reference = None
+
+    pct = None
+    pct_match = _PCT_RE.search(text or "")
+    if pct_match:
+        raw_pct = pct_match.group(1) or pct_match.group(2)
+        try:
+            pct = float(raw_pct)
+        except (TypeError, ValueError):
+            pct = None
+    # Açık yüzde yoksa referans + güncelden hesapla.
+    if pct is None and reference and current and reference > current:
+        pct = round((reference - current) / reference * 100, 1)
+
+    return current, reference, pct
 
 
 def strip_html(text: str) -> str:
@@ -98,7 +154,8 @@ class RssSource(DealSource):
             if deal_id in seen_ids:
                 continue
             seen_ids.add(deal_id)
-            price = extract_price(f"{title} {summary}")
+            blob = f"{title} {strip_html(summary)}"
+            price, reference_price, discount_pct = parse_prices(blob)
             results.append(
                 RawDeal(
                     deal_id=deal_id,
@@ -107,6 +164,8 @@ class RssSource(DealSource):
                     url=link,
                     description=strip_html(summary),
                     price=price,
+                    reference_price=reference_price,
+                    discount_pct=discount_pct,
                     raw_published_at=entry.get("published"),
                 )
             )

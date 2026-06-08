@@ -20,14 +20,21 @@ _API = "https://api.telegram.org/bot{token}/sendMessage"
 def build_message(deal: RawDeal, result: AnalysisResult, deal_score: int) -> str:
     """Spec'teki sade, karar odaklı Telegram mesajını üretir (Markdown)."""
     price = f"{deal.price:.0f} €" if deal.price is not None else "belirtilmemiş"
-    normal = (
-        f"{result.estimated_normal_price:.0f} €"
-        if result.estimated_normal_price else "belirsiz"
-    )
+
+    # Gerçek (ilanda belirtilen) referans fiyat/indirim varsa onu göster; yoksa AI tahmini.
+    if deal.reference_price:
+        normal = f"{deal.reference_price:.0f} € *(ilanda)*"
+    elif result.estimated_normal_price:
+        normal = f"{result.estimated_normal_price:.0f} € *(AI tahmini)*"
+    else:
+        normal = "belirsiz"
+
     discount = "—"
-    if result.estimated_normal_price and deal.price and result.estimated_normal_price > deal.price:
+    if deal.discount_pct:
+        discount = f"%{deal.discount_pct:.0f} *(ilanda)*"
+    elif result.estimated_normal_price and deal.price and result.estimated_normal_price > deal.price:
         pct = (result.estimated_normal_price - deal.price) / result.estimated_normal_price * 100
-        discount = f"yaklaşık %{pct:.0f}"
+        discount = f"yaklaşık %{pct:.0f} *(AI tahmini)*"
 
     manual = "\n⚠️ *Manuel kontrol önerilir*" if result.needs_manual_review else ""
 
