@@ -1,0 +1,63 @@
+# AI Premium Laptop Fırsat Avcısı — örnek yapılandırma.
+# Bu dosyayı config.yaml olarak kopyalayıp kendi değerlerinizle düzenleyin.
+
+polling:
+  interval_seconds: 120        # Sürekli modda iki tarama arası bekleme
+
+ai:
+  provider: gemini             # gemini | dryrun (ileride: claude)
+  model: gemini-2.5-flash-lite
+  temperature: 0.1
+  timeout_seconds: 60
+
+storage:
+  database_path: deals.db
+
+sources:
+  mydealz:
+    enabled: true
+    # Hesap GEREKTİRMEYEN herkese açık kategori RSS feed'leri. Kurulum yok.
+    # Format: https://www.mydealz.de/rss/gruppe/<grup-slug>
+    # İstersen kendi kişisel deal-alarm RSS URL'ini de buraya ekleyebilirsin.
+    feeds:
+      - "https://www.mydealz.de/rss/gruppe/laptop"
+    request_timeout_seconds: 20
+
+filters:
+  min_gpu: "RTX 4060"          # Bu sınıfın altındaki GPU'lar elenir
+  min_ram_gb: 32
+  allow_16gb_if_upgradeable: true
+  min_deal_score: 70           # Telegram bildirimi için alt eşik
+  min_price: 700
+  max_price: 3000
+
+# Fiyatı ne olursa olsun otomatik reddedilen anahtar kelimeler (başlık/açıklama).
+reject_keywords:
+  - "Asus TUF"
+  - "HP Victus"
+  - "Acer Nitro"
+  - "MSI Thin"
+  - "MSI GF"
+  - "MSI Cyborg"
+  - "RTX 4050"
+  - "RTX 3050"
+  - "8GB RAM"
+  - "8 GB RAM"
+
+# Pozitif puan alan premium model aileleri (marka güvenilirliği bileşeni).
+preferred_models:
+  - "ROG Zephyrus"
+  - "ROG Flow"
+  - "Legion Slim 7"
+  - "Legion 7"
+  - "Legion Pro"
+  - "Yoga Pro"
+  - "XPS 15"
+  - "XPS 16"
+  - "Precision"
+  - "ZBook"
+  - "Razer Blade"
+  - "Stealth"
+  - "Creator"
+  - "XMG"
+  - "Schenker"

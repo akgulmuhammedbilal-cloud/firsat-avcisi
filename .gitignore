@@ -1,0 +1,26 @@
+# Secrets — ASLA commit edilmez
+.env
+.env.txt
+
+# Not: config.yaml bilerek COMMIT EDİLİR (API anahtarı içermez; bulut/CI bunu kullanır).
+# Sırlar yalnızca .env'de ve GitHub Actions secrets'tadır.
+
+# Database — deals.db workflow tarafından zorla (-f) eklenir; diğer db'ler yok sayılır
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/

@@ -1,0 +1,60 @@
+# AI Premium Laptop Fırsat Avcısı — yerel yapılandırma.
+# Sırlar burada DEĞİL .env içinde tutulur.
+
+polling:
+  interval_seconds: 120
+
+ai:
+  provider: gemini             # gemini | dryrun
+  model: gemini-2.5-flash-lite
+  temperature: 0.1
+  timeout_seconds: 60
+
+storage:
+  database_path: deals.db
+
+sources:
+  mydealz:
+    enabled: true
+    # Hesap GEREKTİRMEYEN herkese açık laptop kategorisi RSS feed'i.
+    # Kurulum yok — sistem buradaki tüm laptop ilanlarını ön filtre + AI ile değerlendirir.
+    feeds:
+      - "https://www.mydealz.de/rss/gruppe/laptop"
+    request_timeout_seconds: 20
+
+filters:
+  min_gpu: "RTX 4060"
+  min_ram_gb: 32
+  allow_16gb_if_upgradeable: true
+  min_deal_score: 70
+  min_price: 700
+  max_price: 3000
+
+reject_keywords:
+  - "Asus TUF"
+  - "HP Victus"
+  - "Acer Nitro"
+  - "MSI Thin"
+  - "MSI GF"
+  - "MSI Cyborg"
+  - "RTX 4050"
+  - "RTX 3050"
+  - "8GB RAM"
+  - "8 GB RAM"
+
+preferred_models:
+  - "ROG Zephyrus"
+  - "ROG Flow"
+  - "Legion Slim 7"
+  - "Legion 7"
+  - "Legion Pro"
+  - "Yoga Pro"
+  - "XPS 15"
+  - "XPS 16"
+  - "Precision"
+  - "ZBook"
+  - "Razer Blade"
+  - "Stealth"
+  - "Creator"
+  - "XMG"
+  - "Schenker"

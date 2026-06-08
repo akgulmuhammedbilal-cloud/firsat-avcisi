@@ -1,0 +1,45 @@
+# Offline uçtan uca test yapılandırması (yerel örnek feed).
+# Kullanım: python main.py --once --dry-run --config tests/sample_config.yaml
+
+polling:
+  interval_seconds: 120
+
+ai:
+  provider: gemini
+  model: gemini-2.5-flash
+  temperature: 0.1
+
+storage:
+  database_path: test_deals.db
+
+sources:
+  mydealz:
+    enabled: true
+    feeds:
+      - "tests/sample_feed.xml"
+    request_timeout_seconds: 20
+
+filters:
+  min_gpu: "RTX 4060"
+  min_ram_gb: 32
+  allow_16gb_if_upgradeable: true
+  min_deal_score: 60
+  min_price: 700
+  max_price: 3000
+
+reject_keywords:
+  - "Asus TUF"
+  - "HP Victus"
+  - "Acer Nitro"
+  - "MSI Thin"
+  - "MSI GF"
+  - "RTX 4050"
+  - "8GB RAM"
+  - "8 GB RAM"
+
+preferred_models:
+  - "ROG Zephyrus"
+  - "Legion Slim 7"
+  - "Legion 7"
+  - "XPS 16"
+  - "Razer Blade"

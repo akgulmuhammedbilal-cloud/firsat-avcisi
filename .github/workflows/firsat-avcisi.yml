@@ -1,0 +1,49 @@
+name: Fırsat Avcısı
+
+# PC'den bağımsız 7/24 çalışır: GitHub bulutunda zamanlanmış tarama.
+on:
+  schedule:
+    - cron: "*/20 * * * *"   # her 20 dakikada bir (UTC). GitHub yoğunlukta geciktirebilir.
+  workflow_dispatch: {}        # "Run workflow" ile elle de tetiklenebilir
+
+# deals.db'yi depoya geri yazabilmek için yazma izni
+permissions:
+  contents: write
+
+# Aynı anda iki tarama çakışmasın
+concurrency:
+  group: firsat-avcisi
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Bağımlılıkları kur
+        run: pip install -r requirements.txt
+
+      - name: Tarama yap
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py --once --config config.yaml
+
+      - name: Görülen ilanları kaydet (deals.db)
+        run: |
+          git config user.name "firsat-avcisi-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -f deals.db
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: deals.db güncelle [skip ci]"
+            git push
+          else
+            echo "Yeni ilan yok, değişiklik kaydedilmedi."
+          fi
