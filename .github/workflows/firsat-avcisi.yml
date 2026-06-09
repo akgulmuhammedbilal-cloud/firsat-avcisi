@@ -42,9 +42,19 @@ jobs:
           git config user.name "firsat-avcisi-bot"
           git config user.email "actions@users.noreply.github.com"
           git add -f deals.db
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: deals.db güncelle [skip ci]"
-            git push
-          else
+          if git diff --cached --quiet; then
             echo "Yeni ilan yok, değişiklik kaydedilmedi."
+            exit 0
           fi
+          git commit -m "chore: deals.db güncelle [skip ci]"
+          # Eşzamanlı push'larda (kod push'u / başka tarama) non-fast-forward
+          # olabilir; birkaç kez rebase edip yeniden dene.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              echo "deals.db push edildi (deneme $attempt)."
+              exit 0
+            fi
+            echo "Push reddedildi, rebase edilip yeniden denenecek (deneme $attempt)..."
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+          done
+          echo "::warning::deals.db push edilemedi (5 deneme); bu tarama atlanıyor."
