@@ -23,6 +23,9 @@ sources:
     enabled: true
     feeds:
       - "https://www.mydealz.de/rss/gruppe/laptop"
+      # Oyun grubu: salt-laptop grubunda görünmeyen RTX gaming laptopları da yakalar.
+      # İçindeki konsol/oyun/aksesuar ilanları ön filtre + reject_keywords ile elenir.
+      - "https://www.mydealz.de/rss/gruppe/gaming"
       # --- KİŞİSEL KEYWORD ALARM RSS'LERİ ---
       # MyDealz hesabında "Schlagwort-Alarme" (keyword alarmları) oluştur, RSS
       # linklerini buraya ekle. Grup feed'iyle aynı kaynak altında oldukları için
