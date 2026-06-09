@@ -46,9 +46,13 @@ sources:
   # Hazır olunca enabled: true yap, apify_resource'u kendi task/actor ID'inle doldur
   # ve APIFY_TOKEN secret'ını ekle. Alan adları Apify çıktına göre fields'ta eşlenir.
   geizhals:
-    enabled: false
+    enabled: true
     type: apify
-    apify_resource: "actor-tasks/SENIN_TASK_ID"   # veya "acts/KULLANICI~web-scraper"
+    # Apify task "geizhals-rtx-nb" (KfjYm3sHJSu2cuWSk): RTX 4060+ & 32GB+ notebook,
+    # RESIDENTIAL/DE proxy, fiyata göre artan. Schedule "geizhals-rtx-6h" 6 saatte bir
+    # çalıştırır; biz son başarılı run'ın dataset'ini okuruz (residential maliyeti
+    # 20-dk taramadan ayrışır). Selector kalibrasyonu: tools/apify_calibrate.py.
+    apify_resource: "actor-tasks/KfjYm3sHJSu2cuWSk"
     fields:
       title: "title"
       url: "url"
